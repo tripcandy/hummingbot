@@ -218,7 +218,7 @@ class TTNExExchange(ExchangeBase):
         the network connection. Simply ping the network (or call any light weight public API).
         """
         try:
-            await self._api_request("get", "api/v1/ping")
+            await self._api_request("get", "ping")
         except asyncio.CancelledError:
             raise
         except Exception:

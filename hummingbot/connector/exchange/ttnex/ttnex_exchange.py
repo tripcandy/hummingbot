@@ -377,7 +377,7 @@ class TTNExExchange(ExchangeBase):
         :returns A new internal order id
         """
         order_id: str = ttnex_utils.get_new_client_order_id(True, trading_pair)
-        safe_ensure_future(self._create_order(True, order_id, trading_pair, amount, order_type, price))
+        safe_ensure_future(self._create_order(TradeType.BUY, True, order_id, trading_pair, amount, order_type, price))
         return order_id
 
     def sell(self, trading_pair: str, amount: Decimal, order_type=OrderType.MARKET,
@@ -392,7 +392,7 @@ class TTNExExchange(ExchangeBase):
         :returns A new internal order id
         """
         order_id: str = ttnex_utils.get_new_client_order_id(False, trading_pair)
-        safe_ensure_future(self._create_order(False, order_id, trading_pair, amount, order_type, price))
+        safe_ensure_future(self._create_order(TradeType.SELL, False, order_id, trading_pair, amount, order_type, price))
         return order_id
 
     def cancel(self, trading_pair: str, order_id: str):
@@ -406,6 +406,7 @@ class TTNExExchange(ExchangeBase):
         return order_id
 
     async def _create_order(self,
+                            trade_type: TradeType,
                             is_buy: bool,
                             order_id: str,
                             trading_pair: str,

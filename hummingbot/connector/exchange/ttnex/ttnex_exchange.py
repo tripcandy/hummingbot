@@ -218,8 +218,7 @@ class TTNExExchange(ExchangeBase):
         the network connection. Simply ping the network (or call any light weight public API).
         """
         try:
-            # since there is no ping endpoint, the lowest rate call is to get BTC-USDT ticker
-            await self._api_request("get", "public/get-ticker?instrument_name=BTC_USDT")
+            await self._api_request("get", "api/v1/ping")
         except asyncio.CancelledError:
             raise
         except Exception:

@@ -104,7 +104,7 @@ okex_passphrase = os.getenv("OKEX_PASSPHRASE")
 crypto_com_api_key = os.getenv("CRYPTO_COM_API_KEY")
 crypto_com_secret_key = os.getenv("CRYPTO_COM_SECRET_KEY")
 
-# CryptoCom Test
+# TTNEx Test
 ttnex_api_key = os.getenv("TTNEX_API_KEY")
 ttnex_secret_key = os.getenv("TTNEX_COM_SECRET_KEY")
 

@@ -5,8 +5,7 @@ from typing import Dict, Any
 
 class TTNExAuth():
     """
-    Auth class required by crypto.com API
-    Learn more at https://exchange-docs.crypto.com/#digital-signature
+    Auth class required by ttnex.io API
     """
     def __init__(self, api_key: str, secret_key: str):
         self.api_key = api_key
@@ -20,36 +19,23 @@ class TTNExAuth():
         data: Dict[str, Any] = None
     ):
         """
-        Generates authentication signature and return it in a dictionary along with other inputs
+        Adds API Key and return it in a dictionary along with other inputs
         :return: a dictionary of request info including the request signature
         """
 
         data = data or {}
-        data['method'] = path_url
-        data.update({'nonce': nonce, 'api_key': self.api_key, 'id': request_id})
 
         data_params = data.get('params', {})
         if not data_params:
             data['params'] = {}
-        params = ''.join(
-            f'{key}{data_params[key]}'
-            for key in sorted(data_params)
-        )
 
-        payload = f"{path_url}{data['id']}" \
-            f"{self.api_key}{params}{data['nonce']}"
-
-        data['sig'] = hmac.new(
-            self.secret_key.encode('utf-8'),
-            payload.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
+        data['params'].update({'api_key': self.api_key})
 
         return data
 
     def get_headers(self) -> Dict[str, Any]:
         """
-        Generates authentication headers required by crypto.com
+        Generates authentication headers required by ttnex.io
         :return: a dictionary of auth headers
         """
 

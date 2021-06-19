@@ -570,9 +570,9 @@ class TTNExExchange(ExchangeBase):
         """
         local_asset_names = set(self._account_balances.keys())
         remote_asset_names = set()
-        account_info = await self._api_request("post", "private/get-account-summary", {}, True)
-        for account in account_info["result"]["accounts"]:
-            asset_name = account["currency"]
+        account_info = await self._api_request("post", "balance", {}, True)
+        for account in account_info["data"]["balances"]:
+            asset_name = account["asset"]
             self._account_available_balances[asset_name] = Decimal(str(account["available"]))
             self._account_balances[asset_name] = Decimal(str(account["balance"]))
             remote_asset_names.add(asset_name)
@@ -797,9 +797,9 @@ class TTNExExchange(ExchangeBase):
                     for order_msg in event_message["result"]["data"]:
                         self._process_order_message(order_msg)
                 elif channel == "user.balance":
-                    balances = event_message["result"]["data"]
+                    balances = event_message["data"]["balances"]
                     for balance_entry in balances:
-                        asset_name = balance_entry["currency"]
+                        asset_name = balance_entry["asset"]
                         self._account_balances[asset_name] = Decimal(str(balance_entry["balance"]))
                         self._account_available_balances[asset_name] = Decimal(str(balance_entry["available"]))
             except asyncio.CancelledError:

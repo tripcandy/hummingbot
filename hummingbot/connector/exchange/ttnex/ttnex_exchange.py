@@ -436,7 +436,6 @@ class TTNExExchange(ExchangeBase):
                       "type": "limit",
                       "price": f"{price:f}",
                       "size": f"{amount:f}",
-                      "client_oid": order_id
                       }
         if order_type is OrderType.LIMIT_MAKER:
             api_params["exec_inst"] = "POST_ONLY"
@@ -598,7 +597,7 @@ class TTNExExchange(ExchangeBase):
             for tracked_order in tracked_orders:
                 order_id = await tracked_order.get_exchange_order_id()
                 tasks.append(self._api_request("post",
-                                               "private/get-order-detail",
+                                               "order-status",
                                                {"order_id": order_id},
                                                True))
             self.logger().debug(f"Polling for order status updates of {len(tasks)} orders.")
@@ -606,14 +605,14 @@ class TTNExExchange(ExchangeBase):
             for response in responses:
                 if isinstance(response, Exception):
                     raise response
-                if "result" not in response:
-                    self.logger().info(f"_update_order_status result not in resp: {response}")
+                if "data" not in response:
+                    self.logger().info(f"_update_order_status data not in resp: {response}")
                     continue
-                result = response["result"]
-                if "trade_list" in result:
-                    for trade_msg in result["trade_list"]:
+                data = response["data"]
+                if "fills" in data:
+                    for trade_msg in data["fills"]:
                         await self._process_trade_message(trade_msg)
-                self._process_order_message(result["order_info"])
+                self._process_order_message(data["order_info"])
 
     def _process_order_message(self, order_msg: Dict[str, Any]):
         """
@@ -635,8 +634,7 @@ class TTNExExchange(ExchangeBase):
             tracked_order.cancelled_event.set()
             self.stop_tracking_order(client_order_id)
         elif tracked_order.is_failure:
-            self.logger().info(f"The market order {client_order_id} has failed according to order status API. "
-                               f"Reason: {ttnex_utils.get_api_reason(order_msg['reason'])}")
+            self.logger().info(f"The market order {client_order_id} has failed according to order status API. ")
             self.trigger_event(MarketEvent.OrderFailure,
                                MarketOrderFailureEvent(
                                    self.current_timestamp,
@@ -668,8 +666,8 @@ class TTNExExchange(ExchangeBase):
                 tracked_order.trade_type,
                 tracked_order.order_type,
                 Decimal(str(trade_msg["traded_price"])),
-                Decimal(str(trade_msg["traded_quantity"])),
-                TradeFee(0.0, [(trade_msg["fee_currency"], Decimal(str(trade_msg["fee"])))]),
+                Decimal(str(trade_msg["traded_amount"])),
+                TradeFee(0.0, [(trade_msg["fee_asset"], Decimal(str(trade_msg["fee"])))]),
                 exchange_trade_id=trade_msg["order_id"]
             )
         )

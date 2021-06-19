@@ -81,7 +81,7 @@ class TTNExInFlightOrder(InFlightOrderBase):
 
     def update_with_trade_update(self, trade_update: Dict[str, Any]) -> bool:
         """
-        Updates the in flight order with trade update (from private/get-order-detail end point)
+        Updates the in flight order with trade update (from order-status end point)
         return: True if the order gets updated otherwise False
         """
         trade_id = trade_update["trade_id"]
@@ -89,11 +89,12 @@ class TTNExInFlightOrder(InFlightOrderBase):
         if str(trade_update["order_id"]) != self.exchange_order_id or trade_id in self.trade_id_set:
             # trade already recorded
             return False
+
         self.trade_id_set.add(trade_id)
-        self.executed_amount_base += Decimal(str(trade_update["traded_quantity"]))
+        self.executed_amount_base += Decimal(str(trade_update["traded_amount"]))
         self.fee_paid += Decimal(str(trade_update["fee"]))
         self.executed_amount_quote += (Decimal(str(trade_update["traded_price"])) *
-                                       Decimal(str(trade_update["traded_quantity"])))
+                                       Decimal(str(trade_update["traded_amount"])))
         if not self.fee_asset:
-            self.fee_asset = trade_update["fee_currency"]
+            self.fee_asset = trade_update["fee_asset"]
         return True

@@ -524,8 +524,8 @@ class TTNExExchange(ExchangeBase):
             ex_order_id = tracked_order.exchange_order_id
             await self._api_request(
                 "post",
-                "private/cancel-order",
-                {"instrument_name": ttnex_utils.convert_to_exchange_trading_pair(trading_pair),
+                "cancel-order",
+                {"pair": ttnex_utils.convert_to_exchange_trading_pair(trading_pair),
                  "order_id": ex_order_id},
                 True
             )
@@ -707,11 +707,11 @@ class TTNExExchange(ExchangeBase):
 
             for _, order in tracked_orders:
                 api_params = {
-                    "instrument_name": ttnex_utils.convert_to_exchange_trading_pair(order.trading_pair),
+                    "pair": ttnex_utils.convert_to_exchange_trading_pair(order.trading_pair),
                     "order_id": order.exchange_order_id,
                 }
                 tasks.append(self._api_request(method="post",
-                                               path_url="private/cancel-order",
+                                               path_url="cancel-order",
                                                params=api_params,
                                                is_auth_required=True))
 

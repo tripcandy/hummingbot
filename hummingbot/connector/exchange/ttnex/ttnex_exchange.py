@@ -377,7 +377,7 @@ class TTNExExchange(ExchangeBase):
         :returns A new internal order id
         """
         order_id: str = ttnex_utils.get_new_client_order_id(True, trading_pair)
-        safe_ensure_future(self._create_order(TradeType.BUY, True, order_id, trading_pair, amount, order_type, price))
+        safe_ensure_future(self._create_order(TradeType.BUY, order_id, trading_pair, amount, order_type, price))
         return order_id
 
     def sell(self, trading_pair: str, amount: Decimal, order_type=OrderType.MARKET,
@@ -392,7 +392,7 @@ class TTNExExchange(ExchangeBase):
         :returns A new internal order id
         """
         order_id: str = ttnex_utils.get_new_client_order_id(False, trading_pair)
-        safe_ensure_future(self._create_order(TradeType.SELL, False, order_id, trading_pair, amount, order_type, price))
+        safe_ensure_future(self._create_order(TradeType.SELL, order_id, trading_pair, amount, order_type, price))
         return order_id
 
     def cancel(self, trading_pair: str, order_id: str):
@@ -407,7 +407,6 @@ class TTNExExchange(ExchangeBase):
 
     async def _create_order(self,
                             trade_type: TradeType,
-                            is_buy: bool,
                             order_id: str,
                             trading_pair: str,
                             amount: Decimal,
@@ -432,13 +431,12 @@ class TTNExExchange(ExchangeBase):
             raise ValueError(f"Buy order amount {amount} is lower than the minimum order size "
                              f"{trading_rule.min_order_size}.")
         api_params = {"pair": ttnex_utils.convert_to_exchange_trading_pair(trading_pair),
-                      "side": "buy" if is_buy else "sell",
+                      "side": "buy" if trade_type is TradeType.BUY else "sell",
                       "type": "limit",
                       "price": f"{price:f}",
                       "size": f"{amount:f}",
                       }
-        if order_type is OrderType.LIMIT_MAKER:
-            api_params["exec_inst"] = "POST_ONLY"
+
         self.start_tracking_order(order_id,
                                   None,
                                   trading_pair,
@@ -448,8 +446,8 @@ class TTNExExchange(ExchangeBase):
                                   order_type
                                   )
         try:
-            order_result = await self._api_request("post", "trade", api_params, True)
-            exchange_order_id = str(order_result["data"]["success"]["orderId"])
+            order_result = await self._api_request("post", "create-order", api_params, True)
+            exchange_order_id = str(order_result["data"]["order_id"])
             tracked_order = self._in_flight_orders.get(order_id)
             if tracked_order is not None:
                 self.logger().info(f"Created {order_type.name} {trade_type.name} order {order_id} for "

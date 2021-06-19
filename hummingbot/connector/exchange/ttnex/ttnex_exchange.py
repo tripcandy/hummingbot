@@ -813,12 +813,12 @@ class TTNExExchange(ExchangeBase):
     async def get_open_orders(self) -> List[OpenOrder]:
         result = await self._api_request(
             "post",
-            "private/get-open-orders",
+            "open-orders",
             {},
             True
         )
         ret_val = []
-        for order in result["result"]["order_list"]:
+        for order in result["data"]["order_list"]:
             if ttnex_utils.HBOT_BROKER_ID not in order["client_oid"]:
                 continue
             if order["type"] != "LIMIT":
@@ -826,10 +826,10 @@ class TTNExExchange(ExchangeBase):
             ret_val.append(
                 OpenOrder(
                     client_order_id=order["client_oid"],
-                    trading_pair=ttnex_utils.convert_from_exchange_trading_pair(order["instrument_name"]),
+                    trading_pair=ttnex_utils.convert_from_exchange_trading_pair(order["pair"]),
                     price=Decimal(str(order["price"])),
-                    amount=Decimal(str(order["quantity"])),
-                    executed_amount=Decimal(str(order["cumulative_quantity"])),
+                    amount=Decimal(str(order["amount"])),
+                    executed_amount=Decimal(str(order["executed_amount"])),
                     status=order["status"],
                     order_type=OrderType.LIMIT,
                     is_buy=True if order["side"].lower() == "buy" else False,

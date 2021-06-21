@@ -7,15 +7,11 @@ class TTNExAuth():
     """
     Auth class required by ttnex.io API
     """
-    def __init__(self, api_key: str, secret_key: str):
+    def __init__(self, api_key: str):
         self.api_key = api_key
-        self.secret_key = secret_key
 
     def generate_auth_dict(
         self,
-        path_url: str,
-        request_id: int,
-        nonce: int,
         data: Dict[str, Any] = None
     ):
         """

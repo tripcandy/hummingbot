@@ -10,7 +10,7 @@ from hummingbot.client.config.config_methods import using_exchange
 
 CENTRALIZED = True
 
-EXAMPLE_PAIR = "BTC-USDT"
+EXAMPLE_PAIR = "ETH-USDT"
 
 DEFAULT_FEES = [0.1, 0.1]
 
@@ -78,12 +78,6 @@ KEYS = {
     "ttnex_api_key":
         ConfigVar(key="ttnex_api_key",
                   prompt="Enter your Titan Exchange API key >>> ",
-                  required_if=using_exchange("ttnex"),
-                  is_secure=True,
-                  is_connect_key=True),
-    "ttnex_secret_key":
-        ConfigVar(key="ttnex_secret_key",
-                  prompt="Enter your Titan Exchange secret key >>> ",
                   required_if=using_exchange("ttnex"),
                   is_secure=True,
                   is_connect_key=True),

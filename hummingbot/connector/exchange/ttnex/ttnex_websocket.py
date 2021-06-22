@@ -81,30 +81,23 @@ class TTNExWebsocket(RequestId):
 
     # emit messages
     async def _emit(self, method: str, data: Optional[Any] = {}) -> int:
-        id = self.generate_request_id()
-        nonce = get_ms_timestamp()
 
         payload = {
-            "id": id,
             "method": method,
-            "nonce": nonce,
             "params": copy.deepcopy(data),
         }
 
         if self._isPrivate:
             auth = self._auth.generate_auth_dict(
                 method,
-                request_id=id,
-                nonce=nonce,
                 data=data,
             )
 
-            payload["sig"] = auth["sig"]
-            payload["api_key"] = auth["api_key"]
+            payload["params"]["api_key"] = auth["params"]["api_key"]
 
         await self._client.send(ujson.dumps(payload))
 
-        return id
+        return 1
 
     # request via websocket
     async def request(self, method: str, data: Optional[Any] = {}) -> int:

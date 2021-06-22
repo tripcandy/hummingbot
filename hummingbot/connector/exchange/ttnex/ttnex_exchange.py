@@ -317,10 +317,8 @@ class TTNExExchange(ExchangeBase):
         url = f"{Constants.REST_URL}/{path_url}"
         client = await self._http_client()
         if is_auth_required:
-            request_id = ttnex_utils.RequestId.generate_request_id()
             data = {"params": params}
-            params = self._ttnex_auth.generate_auth_dict(path_url, request_id,
-                                                              ttnex_utils.get_ms_timestamp(), data)
+            params = self._ttnex_auth.generate_auth_dict(path_url, data)
             headers = self._ttnex_auth.get_headers()
         else:
             headers = {"Content-Type": "application/json"}

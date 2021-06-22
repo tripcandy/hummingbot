@@ -106,7 +106,6 @@ crypto_com_secret_key = os.getenv("CRYPTO_COM_SECRET_KEY")
 
 # TTNEx Test
 ttnex_api_key = os.getenv("TTNEX_API_KEY")
-ttnex_secret_key = os.getenv("TTNEX_COM_SECRET_KEY")
 
 # HitBTC Tests
 hitbtc_api_key = os.getenv("HITBTC_API_KEY")

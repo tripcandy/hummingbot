@@ -12,7 +12,6 @@ class TTNExAuth():
 
     def generate_auth_dict(
         self,
-        path_url: str,
         data: Dict[str, Any] = None
     ):
         """
@@ -21,7 +20,6 @@ class TTNExAuth():
         """
 
         data = data or {}
-        data['method'] = path_url
 
         data_params = data.get('params', {})
         if not data_params:

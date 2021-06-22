@@ -83,13 +83,11 @@ class TTNExWebsocket(RequestId):
     async def _emit(self, method: str, data: Optional[Any] = {}) -> int:
 
         payload = {
-            "method": method,
             "params": copy.deepcopy(data),
         }
 
         if self._isPrivate:
             auth = self._auth.generate_auth_dict(
-                method,
                 data=data,
             )
 

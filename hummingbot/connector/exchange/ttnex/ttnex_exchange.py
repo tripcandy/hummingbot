@@ -318,7 +318,7 @@ class TTNExExchange(ExchangeBase):
         client = await self._http_client()
         if is_auth_required:
             data = {"params": params}
-            params = self._ttnex_auth.generate_auth_dict(path_url, data)
+            params = self._ttnex_auth.generate_auth_dict(data)
             headers = self._ttnex_auth.get_headers()
         else:
             headers = {"Content-Type": "application/json"}

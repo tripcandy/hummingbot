@@ -65,7 +65,6 @@ class TTNExExchange(ExchangeBase):
 
     def __init__(self,
                  ttnex_api_key: str,
-                 ttnex_secret_key: str,
                  trading_pairs: Optional[List[str]] = None,
                  trading_required: bool = True
                  ):
@@ -78,7 +77,7 @@ class TTNExExchange(ExchangeBase):
         super().__init__()
         self._trading_required = trading_required
         self._trading_pairs = trading_pairs
-        self._ttnex_auth = TTNExAuth(ttnex_api_key, ttnex_secret_key)
+        self._ttnex_auth = TTNExAuth(ttnex_api_key)
         self._order_book_tracker = TTNExOrderBookTracker(trading_pairs=trading_pairs)
         self._user_stream_tracker = TTNExUserStreamTracker(self._ttnex_auth, trading_pairs)
         self._ev_loop = asyncio.get_event_loop()

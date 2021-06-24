@@ -6,11 +6,11 @@ import logging
 from typing import Optional, List, AsyncIterable, Any
 from hummingbot.core.data_type.user_stream_tracker_data_source import UserStreamTrackerDataSource
 from hummingbot.logger import HummingbotLogger
-from .ttnex_auth import TTNExAuth
-from .ttnex_websocket import TTNExWebsocket
+from .ttnex_auth import TtnexAuth
+from .ttnex_websocket import TtnexWebsocket
 
 
-class TTNExAPIUserStreamDataSource(UserStreamTrackerDataSource):
+class TtnexAPIUserStreamDataSource(UserStreamTrackerDataSource):
     MAX_RETRIES = 20
     MESSAGE_TIMEOUT = 30.0
 
@@ -22,8 +22,8 @@ class TTNExAPIUserStreamDataSource(UserStreamTrackerDataSource):
             cls._logger = logging.getLogger(__name__)
         return cls._logger
 
-    def __init__(self, ttnex_auth: TTNExAuth, trading_pairs: Optional[List[str]] = []):
-        self._ttnex_auth: TTNExAuth = ttnex_auth
+    def __init__(self, ttnex_auth: TtnexAuth, trading_pairs: Optional[List[str]] = []):
+        self._ttnex_auth: TtnexAuth = ttnex_auth
         self._trading_pairs = trading_pairs
         self._current_listen_key = None
         self._listen_for_user_stream_task = None
@@ -40,7 +40,7 @@ class TTNExAPIUserStreamDataSource(UserStreamTrackerDataSource):
         """
 
         try:
-            ws = TTNExWebsocket(self._ttnex_auth)
+            ws = TtnexWebsocket(self._ttnex_auth)
             await ws.connect()
             await ws.subscribe(["user.order", "user.trade", "user.balance"])
             async for msg in ws.on_message():
@@ -71,6 +71,6 @@ class TTNExAPIUserStreamDataSource(UserStreamTrackerDataSource):
                 raise
             except Exception:
                 self.logger().error(
-                    "Unexpected error with TTNEx WebSocket connection. " "Retrying after 30 seconds...", exc_info=True
+                    "Unexpected error with Ttnex WebSocket connection. " "Retrying after 30 seconds...", exc_info=True
                 )
                 await asyncio.sleep(30.0)

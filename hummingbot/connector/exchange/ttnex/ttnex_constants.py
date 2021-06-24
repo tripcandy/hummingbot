@@ -3,10 +3,7 @@
 
 EXCHANGE_NAME = "ttnex"
 REST_URL = "http://65.21.73.24:8000/api/v1"
-# WSS_PRIVATE_URL = "wss://stream.crypto.com/v2/user"
-WSS_PRIVATE_URL = "wss://d289dek49b4wqs.cloudfront.net/v2/user"
-# WSS_PUBLIC_URL = "wss://stream.crypto.com/v2/market"
-# WSS_PUBLIC_URL = "wss://d10tq1f9ygdz7y.cloudfront.net/v2/market"
+WSS_PRIVATE_URL = "wss://service.ttnex.io:5811"
 WSS_PRIVATE_URL = "wss://service.ttnex.io:5811"
 
 API_REASONS = {

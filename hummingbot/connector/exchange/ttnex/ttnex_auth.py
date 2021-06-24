@@ -1,9 +1,7 @@
-import hmac
-import hashlib
 from typing import Dict, Any
 
 
-class TTNExAuth():
+class TtnexAuth():
     """
     Auth class required by ttnex.io API
     """

@@ -13,13 +13,13 @@ from hummingbot.core.data_type.order_book_tracker_data_source import OrderBookTr
 from hummingbot.core.utils.async_utils import safe_gather
 from hummingbot.logger import HummingbotLogger
 from . import ttnex_utils
-from .ttnex_active_order_tracker import TTNExActiveOrderTracker
-from .ttnex_order_book import TTNExOrderBook
-from .ttnex_websocket import TTNExWebsocket
+from .ttnex_active_order_tracker import TtnexActiveOrderTracker
+from .ttnex_order_book import TtnexOrderBook
+from .ttnex_websocket import TtnexWebsocket
 from .ttnex_utils import ms_timestamp_to_s
 
 
-class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
+class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
     MAX_RETRIES = 20
     MESSAGE_TIMEOUT = 30.0
     SNAPSHOT_TIMEOUT = 10.0
@@ -90,13 +90,13 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
     async def get_new_order_book(self, trading_pair: str) -> OrderBook:
         snapshot: Dict[str, Any] = await self.get_order_book_data(trading_pair)
         snapshot_timestamp: float = time.time()
-        snapshot_msg: OrderBookMessage = TTNExOrderBook.snapshot_message_from_exchange(
+        snapshot_msg: OrderBookMessage = TtnexOrderBook.snapshot_message_from_exchange(
             snapshot,
             snapshot_timestamp,
             metadata={"trading_pair": trading_pair}
         )
         order_book = self.order_book_create_function()
-        active_order_tracker: TTNExActiveOrderTracker = TTNExActiveOrderTracker()
+        active_order_tracker: TtnexActiveOrderTracker = TtnexActiveOrderTracker()
         bids, asks = active_order_tracker.convert_snapshot_message_to_order_book_row(snapshot_msg)
         order_book.apply_snapshot(bids, asks, snapshot_msg.update_id)
         return order_book
@@ -107,7 +107,7 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
         """
         while True:
             try:
-                ws = TTNExWebsocket()
+                ws = TtnexWebsocket()
                 await ws.connect()
 
                 await ws.subscribe(list(map(
@@ -122,7 +122,7 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
                     for trade in response["result"]["data"]:
                         trade: Dict[Any] = trade
                         trade_timestamp: int = ms_timestamp_to_s(trade["t"])
-                        trade_msg: OrderBookMessage = TTNExOrderBook.trade_message_from_exchange(
+                        trade_msg: OrderBookMessage = TtnexOrderBook.trade_message_from_exchange(
                             trade,
                             trade_timestamp,
                             metadata={"trading_pair": ttnex_utils.convert_from_exchange_trading_pair(trade["i"])}
@@ -143,7 +143,7 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
         """
         while True:
             try:
-                ws = TTNExWebsocket()
+                ws = TtnexWebsocket()
                 await ws.connect()
 
                 await ws.subscribe(list(map(
@@ -160,7 +160,7 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
                     # data in this channel is not order book diff but the entire order book (up to depth 150).
                     # so we need to convert it into a order book snapshot.
                     # Crypto.com does not offer order book diff ws updates.
-                    orderbook_msg: OrderBookMessage = TTNExOrderBook.snapshot_message_from_exchange(
+                    orderbook_msg: OrderBookMessage = TtnexOrderBook.snapshot_message_from_exchange(
                         order_book_data,
                         timestamp,
                         metadata={"trading_pair": ttnex_utils.convert_from_exchange_trading_pair(
@@ -191,7 +191,7 @@ class TTNExAPIOrderBookDataSource(OrderBookTrackerDataSource):
                     try:
                         snapshot: Dict[str, any] = await self.get_order_book_data(trading_pair)
                         snapshot_timestamp: int = ms_timestamp_to_s(snapshot["t"])
-                        snapshot_msg: OrderBookMessage = TTNExOrderBook.snapshot_message_from_exchange(
+                        snapshot_msg: OrderBookMessage = TtnexOrderBook.snapshot_message_from_exchange(
                             snapshot,
                             snapshot_timestamp,
                             metadata={"trading_pair": trading_pair}

@@ -11,14 +11,14 @@ from hummingbot.core.utils.async_utils import safe_ensure_future
 from typing import Optional, AsyncIterable, Any, List
 from websockets.exceptions import ConnectionClosed
 from hummingbot.logger import HummingbotLogger
-from hummingbot.connector.exchange.ttnex.ttnex_auth import TTNExAuth
+from hummingbot.connector.exchange.ttnex.ttnex_auth import TtnexAuth
 from hummingbot.connector.exchange.ttnex.ttnex_utils import RequestId, get_ms_timestamp
 
 # reusable websocket class
 # ToDo: We should eventually remove this class, and instantiate web socket connection normally (see Binance for example)
 
 
-class TTNExWebsocket(RequestId):
+class TtnexWebsocket(RequestId):
     MESSAGE_TIMEOUT = 30.0
     PING_TIMEOUT = 10.0
     _logger: Optional[HummingbotLogger] = None
@@ -29,8 +29,8 @@ class TTNExWebsocket(RequestId):
             cls._logger = logging.getLogger(__name__)
         return cls._logger
 
-    def __init__(self, auth: Optional[TTNExAuth] = None):
-        self._auth: Optional[TTNExAuth] = auth
+    def __init__(self, auth: Optional[TtnexAuth] = None):
+        self._auth: Optional[TtnexAuth] = auth
         self._isPrivate = True if self._auth is not None else False
         self._WS_URL = constants.WSS_PRIVATE_URL if self._isPrivate else constants.WSS_PUBLIC_URL
         self._client: Optional[websockets.WebSocketClientProtocol] = None
@@ -81,13 +81,21 @@ class TTNExWebsocket(RequestId):
 
     # emit messages
     async def _emit(self, method: str, data: Optional[Any] = {}) -> int:
+        id = self.generate_request_id()
+        nonce = get_ms_timestamp()
 
         payload = {
+            "id": id,
+            "method": method,
+            "nonce": nonce,
             "params": copy.deepcopy(data),
         }
 
         if self._isPrivate:
             auth = self._auth.generate_auth_dict(
+                method,
+                request_id=id,
+                nonce=nonce,
                 data=data,
             )
 
@@ -95,7 +103,7 @@ class TTNExWebsocket(RequestId):
 
         await self._client.send(ujson.dumps(payload))
 
-        return 1
+        return id
 
     # request via websocket
     async def request(self, method: str, data: Optional[Any] = {}) -> int:

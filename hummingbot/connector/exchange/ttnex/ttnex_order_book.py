@@ -13,12 +13,12 @@ from hummingbot.core.data_type.order_book import OrderBook
 from hummingbot.core.data_type.order_book_message import (
     OrderBookMessage, OrderBookMessageType
 )
-from hummingbot.connector.exchange.ttnex.ttnex_order_book_message import TTNExOrderBookMessage
+from hummingbot.connector.exchange.ttnex.ttnex_order_book_message import TtnexOrderBookMessage
 
 _logger = None
 
 
-class TTNExOrderBook(OrderBook):
+class TtnexOrderBook(OrderBook):
     @classmethod
     def logger(cls) -> HummingbotLogger:
         global _logger
@@ -35,13 +35,13 @@ class TTNExOrderBook(OrderBook):
         Convert json snapshot data into standard OrderBookMessage format
         :param msg: json snapshot data from live web socket stream
         :param timestamp: timestamp attached to incoming data
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
 
         if metadata:
             msg.update(metadata)
 
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.SNAPSHOT,
             content=msg,
             timestamp=timestamp
@@ -53,9 +53,9 @@ class TTNExOrderBook(OrderBook):
         *used for backtesting
         Convert a row of snapshot data into standard OrderBookMessage format
         :param record: a row of snapshot data from the database
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.SNAPSHOT,
             content=record.json,
             timestamp=record.timestamp
@@ -70,13 +70,13 @@ class TTNExOrderBook(OrderBook):
         Convert json diff data into standard OrderBookMessage format
         :param msg: json diff data from live web socket stream
         :param timestamp: timestamp attached to incoming data
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
 
         if metadata:
             msg.update(metadata)
 
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.DIFF,
             content=msg,
             timestamp=timestamp
@@ -88,9 +88,9 @@ class TTNExOrderBook(OrderBook):
         *used for backtesting
         Convert a row of diff data into standard OrderBookMessage format
         :param record: a row of diff data from the database
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.DIFF,
             content=record.json,
             timestamp=record.timestamp
@@ -104,7 +104,7 @@ class TTNExOrderBook(OrderBook):
         """
         Convert a trade data into standard OrderBookMessage format
         :param record: a trade data from the database
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
 
         if metadata:
@@ -117,7 +117,7 @@ class TTNExOrderBook(OrderBook):
             "amount": msg.get("q"),
         })
 
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.TRADE,
             content=msg,
             timestamp=timestamp
@@ -129,9 +129,9 @@ class TTNExOrderBook(OrderBook):
         *used for backtesting
         Convert a row of trade data into standard OrderBookMessage format
         :param record: a row of trade data from the database
-        :return: TTNExOrderBookMessage
+        :return: TtnexOrderBookMessage
         """
-        return TTNExOrderBookMessage(
+        return TtnexOrderBookMessage(
             message_type=OrderBookMessageType.TRADE,
             content=record.json,
             timestamp=record.timestamp

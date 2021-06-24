@@ -16,12 +16,12 @@ from hummingbot.core.utils.async_utils import (
     safe_gather,
 )
 from hummingbot.connector.exchange.ttnex.ttnex_api_user_stream_data_source import \
-    TTNExAPIUserStreamDataSource
-from hummingbot.connector.exchange.ttnex.ttnex_auth import TTNExAuth
+    TtnexAPIUserStreamDataSource
+from hummingbot.connector.exchange.ttnex.ttnex_auth import TtnexAuth
 from hummingbot.connector.exchange.ttnex.ttnex_constants import EXCHANGE_NAME
 
 
-class TTNExUserStreamTracker(UserStreamTracker):
+class TtnexUserStreamTracker(UserStreamTracker):
     _cbpust_logger: Optional[HummingbotLogger] = None
 
     @classmethod
@@ -31,10 +31,10 @@ class TTNExUserStreamTracker(UserStreamTracker):
         return cls._bust_logger
 
     def __init__(self,
-                 ttnex_auth: Optional[TTNExAuth] = None,
+                 ttnex_auth: Optional[TtnexAuth] = None,
                  trading_pairs: Optional[List[str]] = []):
         super().__init__()
-        self._ttnex_auth: TTNExAuth = ttnex_auth
+        self._ttnex_auth: TtnexAuth = ttnex_auth
         self._trading_pairs: List[str] = trading_pairs
         self._ev_loop: asyncio.events.AbstractEventLoop = asyncio.get_event_loop()
         self._data_source: Optional[UserStreamTrackerDataSource] = None
@@ -48,7 +48,7 @@ class TTNExUserStreamTracker(UserStreamTracker):
         :return: OrderBookTrackerDataSource
         """
         if not self._data_source:
-            self._data_source = TTNExAPIUserStreamDataSource(
+            self._data_source = TtnexAPIUserStreamDataSource(
                 ttnex_auth=self._ttnex_auth,
                 trading_pairs=self._trading_pairs
             )

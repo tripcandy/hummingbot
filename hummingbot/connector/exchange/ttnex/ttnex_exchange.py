@@ -35,10 +35,10 @@ from hummingbot.core.event.events import (
     TradeFee
 )
 from hummingbot.connector.exchange_base import ExchangeBase
-from hummingbot.connector.exchange.ttnex.ttnex_order_book_tracker import TTNExOrderBookTracker
-from hummingbot.connector.exchange.ttnex.ttnex_user_stream_tracker import TTNExUserStreamTracker
-from hummingbot.connector.exchange.ttnex.ttnex_auth import TTNExAuth
-from hummingbot.connector.exchange.ttnex.ttnex_in_flight_order import TTNExInFlightOrder
+from hummingbot.connector.exchange.ttnex.ttnex_order_book_tracker import TtnexOrderBookTracker
+from hummingbot.connector.exchange.ttnex.ttnex_user_stream_tracker import TtnexUserStreamTracker
+from hummingbot.connector.exchange.ttnex.ttnex_auth import TtnexAuth
+from hummingbot.connector.exchange.ttnex.ttnex_in_flight_order import TtnexInFlightOrder
 from hummingbot.connector.exchange.ttnex import ttnex_utils
 from hummingbot.connector.exchange.ttnex import ttnex_constants as Constants
 from hummingbot.core.data_type.common import OpenOrder
@@ -46,9 +46,9 @@ ctce_logger = None
 s_decimal_NaN = Decimal("nan")
 
 
-class TTNExExchange(ExchangeBase):
+class TtnexExchange(ExchangeBase):
     """
-    TTNExExchange connects with Titan Exchange and provides order book pricing, user account tracking and
+    TtnexExchange connects with Titan Exchange and provides order book pricing, user account tracking and
     trading functionality.
     """
     API_CALL_TIMEOUT = 10.0
@@ -77,14 +77,14 @@ class TTNExExchange(ExchangeBase):
         super().__init__()
         self._trading_required = trading_required
         self._trading_pairs = trading_pairs
-        self._ttnex_auth = TTNExAuth(ttnex_api_key)
-        self._order_book_tracker = TTNExOrderBookTracker(trading_pairs=trading_pairs)
-        self._user_stream_tracker = TTNExUserStreamTracker(self._ttnex_auth, trading_pairs)
+        self._ttnex_auth = TtnexAuth(ttnex_api_key)
+        self._order_book_tracker = TtnexOrderBookTracker(trading_pairs=trading_pairs)
+        self._user_stream_tracker = TtnexUserStreamTracker(self._ttnex_auth, trading_pairs)
         self._ev_loop = asyncio.get_event_loop()
         self._shared_client = None
         self._poll_notifier = asyncio.Event()
         self._last_timestamp = 0
-        self._in_flight_orders = {}  # Dict[client_order_id:str, TTNExInFlightOrder]
+        self._in_flight_orders = {}  # Dict[client_order_id:str, TtnexInFlightOrder]
         self._order_not_found_records = {}  # Dict[client_order_id:str, count:int]
         self._trading_rules = {}  # Dict[trading_pair:str, TradingRule]
         self._status_polling_task = None
@@ -105,7 +105,7 @@ class TTNExExchange(ExchangeBase):
         return self._trading_rules
 
     @property
-    def in_flight_orders(self) -> Dict[str, TTNExInFlightOrder]:
+    def in_flight_orders(self) -> Dict[str, TtnexInFlightOrder]:
         return self._in_flight_orders
 
     @property
@@ -154,7 +154,7 @@ class TTNExExchange(ExchangeBase):
         :param saved_states: The saved tracking_states.
         """
         self._in_flight_orders.update({
-            key: TTNExInFlightOrder.from_json(value)
+            key: TtnexInFlightOrder.from_json(value)
             for key, value in saved_states.items()
         })
 
@@ -487,7 +487,7 @@ class TTNExExchange(ExchangeBase):
         """
         Starts tracking an order by simply adding it into _in_flight_orders dictionary.
         """
-        self._in_flight_orders[order_id] = TTNExInFlightOrder(
+        self._in_flight_orders[order_id] = TtnexInFlightOrder(
             client_order_id=order_id,
             exchange_order_id=exchange_order_id,
             trading_pair=trading_pair,
@@ -533,7 +533,7 @@ class TTNExExchange(ExchangeBase):
             self.logger().network(
                 f"Failed to cancel order {order_id}: {str(e)}",
                 exc_info=True,
-                app_warning_msg=f"Failed to cancel the order {order_id} on TTNEx. "
+                app_warning_msg=f"Failed to cancel the order {order_id} on Ttnex. "
                                 f"Check API key and network connection."
             )
 
@@ -697,7 +697,7 @@ class TTNExExchange(ExchangeBase):
         """
         if self._trading_pairs is None:
             raise Exception("cancel_all can only be used when trading_pairs are specified.")
-        tracked_orders: Dict[str, TTNExInFlightOrder] = self._in_flight_orders.copy().items()
+        tracked_orders: Dict[str, TtnexInFlightOrder] = self._in_flight_orders.copy().items()
         cancellation_results = []
         try:
             tasks = []
@@ -773,14 +773,14 @@ class TTNExExchange(ExchangeBase):
                 self.logger().network(
                     "Unknown error. Retrying after 1 seconds.",
                     exc_info=True,
-                    app_warning_msg="Could not fetch user events from TTNEx. Check API key and network connection."
+                    app_warning_msg="Could not fetch user events from Ttnex. Check API key and network connection."
                 )
                 await asyncio.sleep(1.0)
 
     async def _user_stream_event_listener(self):
         """
         Listens to message in _user_stream_tracker.user_stream queue. The messages are put in by
-        TTNExAPIUserStreamDataSource.
+        TtnexAPIUserStreamDataSource.
         """
         async for event_message in self._iter_user_event_queue():
             try:

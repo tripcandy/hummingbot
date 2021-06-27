@@ -250,52 +250,48 @@ class TtnexExchange(ExchangeBase):
                 await asyncio.sleep(0.5)
 
     async def _update_trading_rules(self):
-        instruments_info = await self._api_request("get", path_url="public/get-instruments")
+        pairs_info = await self._api_request("get", path_url="pairs")
         self._trading_rules.clear()
-        self._trading_rules = self._format_trading_rules(instruments_info)
+        self._trading_rules = self._format_trading_rules(pairs_info)
 
-    def _format_trading_rules(self, instruments_info: Dict[str, Any]) -> Dict[str, TradingRule]:
+    def _format_trading_rules(self, pairs_info: Dict[str, Any]) -> Dict[str, TradingRule]:
         """
         Converts json API response into a dictionary of trading rules.
-        :param instruments_info: The json API response
+        :param pairs_info: The json API response
         :return A dictionary of trading rules.
         Response Example:
         {
-            "id": 11,
-            "method": "public/get-instruments",
-            "code": 0,
-            "result": {
-                "instruments": [
-                      {
-                        "instrument_name": "ETH_CRO",
-                        "quote_currency": "CRO",
-                        "base_currency": "ETH",
-                        "price_decimals": 2,
-                        "quantity_decimals": 2
-                      },
-                      {
-                        "instrument_name": "CRO_BTC",
-                        "quote_currency": "BTC",
-                        "base_currency": "CRO",
-                        "price_decimals": 8,
-                        "quantity_decimals": 2
-                      }
-                    ]
-              }
+            “status”: true,
+            “data”: [
+                {
+                    “pair”: “LTC-BTC”,
+                    “min_order_size”: 0.010000,
+                    “max_order_size”: 100000.000000,
+                    “min_order_value”: 0.000100
+                },
+                {
+                    “pair”: “ETH-USDT”,
+                    “min_order_size”: 0.00,
+                    “max_order_size”: 9000.00,
+                    “min_order_value”: 10.00
+                },
+                ...
+              ]
         }
         """
         result = {}
-        for rule in instruments_info["result"]["instruments"]:
+        for rule in pairs_info["data"]:
             try:
-                trading_pair = ttnex_utils.convert_from_exchange_trading_pair(rule["instrument_name"])
-                price_decimals = Decimal(str(rule["price_decimals"]))
-                quantity_decimals = Decimal(str(rule["quantity_decimals"]))
-                # E.g. a price decimal of 2 means 0.01 incremental.
-                price_step = Decimal("1") / Decimal(str(math.pow(10, price_decimals)))
-                quantity_step = Decimal("1") / Decimal(str(math.pow(10, quantity_decimals)))
+                trading_pair = ttnex_utils.convert_from_exchange_trading_pair(rule["pair"])
+                # price_decimals = Decimal(str(rule["price_decimals"]))
+                # quantity_decimals = Decimal(str(rule["quantity_decimals"]))
+                # # E.g. a price decimal of 2 means 0.01 incremental.
+                # price_step = Decimal("1") / Decimal(str(math.pow(10, price_decimals)))
+                # quantity_step = Decimal("1") / Decimal(str(math.pow(10, quantity_decimals)))
                 result[trading_pair] = TradingRule(trading_pair,
-                                                   min_price_increment=price_step,
-                                                   min_base_amount_increment=quantity_step)
+                                                   min_order_size=Decimal(rule["min_order_size"]),
+                                                   max_order_size=Decimal(rule["min_order_size"]),
+                                                   min_order_value=Decimal(rule["min_order_value"]))
             except Exception:
                 self.logger().error(f"Error parsing the trading pair rule {rule}. Skipping.", exc_info=True)
         return result

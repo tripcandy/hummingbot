@@ -48,8 +48,8 @@ class TtnexOrderBookMessage(OrderBookMessage):
     def trading_pair(self) -> str:
         if "trading_pair" in self.content:
             return self.content["trading_pair"]
-        elif "instrument_name" in self.content:
-            return self.content["instrument_name"]
+        elif "pair" in self.content:
+            return self.content["pair"]
 
     @property
     def asks(self) -> List[OrderBookRow]:

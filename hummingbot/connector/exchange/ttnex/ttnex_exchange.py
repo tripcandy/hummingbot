@@ -333,7 +333,7 @@ class TtnexExchange(ExchangeBase):
         if response.status != 200:
             raise IOError(f"Error fetching data from {url}. HTTP status is {response.status}. "
                           f"Message: {parsed_response}")
-        if parsed_response["code"] != 0:
+        if not parsed_response["status"]:
             raise IOError(f"{url} API call failed, response: {parsed_response}")
         # print(f"REQUEST: {method} {path_url} {params}")
         # print(f"RESPONSE: {parsed_response}")
@@ -564,6 +564,7 @@ class TtnexExchange(ExchangeBase):
         local_asset_names = set(self._account_balances.keys())
         remote_asset_names = set()
         account_info = await self._api_request("post", "balance", {}, True)
+        print(account_info)
         for account in account_info["data"]["balances"]:
             asset_name = account["asset"]
             self._account_available_balances[asset_name] = Decimal(str(account["available"]))

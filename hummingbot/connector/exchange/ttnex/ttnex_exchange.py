@@ -564,7 +564,6 @@ class TtnexExchange(ExchangeBase):
         local_asset_names = set(self._account_balances.keys())
         remote_asset_names = set()
         account_info = await self._api_request("post", "balance", {}, True)
-        print(account_info)
         for account in account_info["data"]["balances"]:
             asset_name = account["asset"]
             self._account_available_balances[asset_name] = Decimal(str(account["available"]))
@@ -781,17 +780,17 @@ class TtnexExchange(ExchangeBase):
         """
         async for event_message in self._iter_user_event_queue():
             try:
-                if "result" not in event_message or "channel" not in event_message["result"]:
+                if "data" not in event_message or "channel" not in event_message:
                     continue
-                channel = event_message["result"]["channel"]
-                if "user.trade" in channel:
-                    for trade_msg in event_message["result"]["data"]:
+                channel = event_message["channel"]
+                if channel == "user-trade":
+                    for trade_msg in event_message["data"]:
                         await self._process_trade_message(trade_msg)
-                elif "user.order" in channel:
-                    for order_msg in event_message["result"]["data"]:
+                elif channel == "user-order":
+                    for order_msg in event_message["data"]:
                         self._process_order_message(order_msg)
-                elif channel == "user.balance":
-                    balances = event_message["data"]["balances"]
+                elif channel == "user-balance":
+                    balances = event_message["data"]
                     for balance_entry in balances:
                         asset_name = balance_entry["asset"]
                         self._account_balances[asset_name] = Decimal(str(balance_entry["balance"]))

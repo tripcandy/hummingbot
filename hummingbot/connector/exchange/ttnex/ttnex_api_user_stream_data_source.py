@@ -36,13 +36,14 @@ class TtnexAPIUserStreamDataSource(UserStreamTrackerDataSource):
 
     async def _listen_to_orders_trades_balances(self) -> AsyncIterable[Any]:
         """
-        Subscribe to active orders via web socket
+        Subscribe to active orders, trades, balances via web socket
         """
 
         try:
             ws = TtnexWebsocket(self._ttnex_auth)
             await ws.connect()
-            await ws.subscribe(["user.order", "user.trade", "user.balance"])
+            for channel in ["user-order", "user-trade", "user-balance"]:
+                await ws.subscribe(channel)
             async for msg in ws.on_message():
                 # print(f"WS_SOCKET: {msg}")
                 yield msg

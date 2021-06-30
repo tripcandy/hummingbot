@@ -5,14 +5,13 @@ import logging
 import websockets
 import ujson
 import hummingbot.connector.exchange.ttnex.ttnex_constants as constants
-from hummingbot.core.utils.async_utils import safe_ensure_future
 
 
-from typing import Optional, AsyncIterable, Any, List
+from typing import Optional, AsyncIterable, Any
 from websockets.exceptions import ConnectionClosed
 from hummingbot.logger import HummingbotLogger
 from hummingbot.connector.exchange.ttnex.ttnex_auth import TtnexAuth
-from hummingbot.connector.exchange.ttnex.ttnex_utils import RequestId, get_ms_timestamp
+from hummingbot.connector.exchange.ttnex.ttnex_utils import RequestId
 
 # reusable websocket class
 # ToDo: We should eventually remove this class, and instantiate web socket connection normally (see Binance for example)
@@ -32,21 +31,13 @@ class TtnexWebsocket(RequestId):
     def __init__(self, auth: Optional[TtnexAuth] = None):
         self._auth: Optional[TtnexAuth] = auth
         self._isPrivate = True if self._auth is not None else False
-        self._WS_URL = constants.WSS_PRIVATE_URL if self._isPrivate else constants.WSS_PUBLIC_URL
+        self._WS_URL = constants.WS_URL
         self._client: Optional[websockets.WebSocketClientProtocol] = None
 
     # connect to exchange
     async def connect(self):
         try:
             self._client = await websockets.connect(self._WS_URL)
-
-            # if auth class was passed into websocket class
-            # we need to emit authenticated requests
-            if self._isPrivate:
-                await self._emit("public/auth", None)
-                # TODO: wait for response
-                await asyncio.sleep(1)
-
             return self._client
         except Exception as e:
             self.logger().error(f"Websocket error: '{str(e)}'", exc_info=True)
@@ -65,9 +56,6 @@ class TtnexWebsocket(RequestId):
                 try:
                     raw_msg_str: str = await asyncio.wait_for(self._client.recv(), timeout=self.MESSAGE_TIMEOUT)
                     raw_msg = ujson.loads(raw_msg_str)
-                    if "method" in raw_msg and raw_msg["method"] == "public/heartbeat":
-                        payload = {"id": raw_msg["id"], "method": "public/respond-heartbeat"}
-                        safe_ensure_future(self._client.send(ujson.dumps(payload)))
                     yield raw_msg
                 except asyncio.TimeoutError:
                     await asyncio.wait_for(self._client.ping(), timeout=self.PING_TIMEOUT)
@@ -81,44 +69,35 @@ class TtnexWebsocket(RequestId):
 
     # emit messages
     async def _emit(self, method: str, data: Optional[Any] = {}) -> int:
-        id = self.generate_request_id()
-        nonce = get_ms_timestamp()
 
         payload = {
-            "id": id,
             "method": method,
-            "nonce": nonce,
             "params": copy.deepcopy(data),
         }
 
         if self._isPrivate:
-            auth = self._auth.generate_auth_dict(
-                method,
-                request_id=id,
-                nonce=nonce,
-                data=data,
-            )
-
-            payload["params"]["api_key"] = auth["params"]["api_key"]
+            payload = self._auth.generate_auth_dict(payload)
 
         await self._client.send(ujson.dumps(payload))
 
-        return id
+        # crypto_com coonector generated and returned request_id. ttnex doesn't
+        # have a request_id in request parameters, so returning -1 instead
+        return -1
 
     # request via websocket
     async def request(self, method: str, data: Optional[Any] = {}) -> int:
         return await self._emit(method, data)
 
     # subscribe to a method
-    async def subscribe(self, channels: List[str]) -> int:
+    async def subscribe(self, channel: str) -> int:
         return await self.request("subscribe", {
-            "channels": channels
+            "channel": channel
         })
 
     # unsubscribe to a method
-    async def unsubscribe(self, channels: List[str]) -> int:
+    async def unsubscribe(self, channel: str) -> int:
         return await self.request("unsubscribe", {
-            "channels": channels
+            "channel": channel
         })
 
     # listen to messages by method

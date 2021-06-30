@@ -72,7 +72,7 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
         """
         async with aiohttp.ClientSession() as client:
             orderbook_response = await client.get(
-                f"{constants.REST_URL}/book?depth=150&pair="
+                f"{constants.REST_URL}/book?depth=100&pair="
                 f"{ttnex_utils.convert_to_exchange_trading_pair(trading_pair)}"
             )
 
@@ -110,22 +110,20 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 ws = TtnexWebsocket()
                 await ws.connect()
 
-                await ws.subscribe(list(map(
-                    lambda pair: f"trade.{ttnex_utils.convert_to_exchange_trading_pair(pair)}",
-                    self._trading_pairs
-                )))
+                for trading_pair in self._trading_pairs:
+                    await ws.subscribe(f"trade.{ttnex_utils.convert_to_exchange_trading_pair(trading_pair)}")
 
                 async for response in ws.on_message():
-                    if response.get("result") is None:
+                    if response.get("data") is None:
                         continue
 
-                    for trade in response["result"]["data"]:
+                    for trade in response["data"]:
                         trade: Dict[Any] = trade
-                        trade_timestamp: int = ms_timestamp_to_s(trade["t"])
+                        trade_timestamp: int = ms_timestamp_to_s(trade["time"])
                         trade_msg: OrderBookMessage = TtnexOrderBook.trade_message_from_exchange(
                             trade,
                             trade_timestamp,
-                            metadata={"trading_pair": ttnex_utils.convert_from_exchange_trading_pair(trade["i"])}
+                            metadata={"trading_pair": ttnex_utils.convert_from_exchange_trading_pair(trade["pair"])}
                         )
                         output.put_nowait(trade_msg)
 
@@ -146,10 +144,8 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 ws = TtnexWebsocket()
                 await ws.connect()
 
-                await ws.subscribe(list(map(
-                    lambda pair: f"book.{ttnex_utils.convert_to_exchange_trading_pair(pair)}.150",
-                    self._trading_pairs
-                )))
+                for trading_pair in self._trading_pairs:
+                    await ws.subscribe(f"book.{ttnex_utils.convert_to_exchange_trading_pair(trading_pair)}.100")
 
                 async for response in ws.on_message():
                     if response.get("data") is None:
@@ -157,14 +153,14 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
 
                     order_book_data = response["data"]
                     timestamp: int = ms_timestamp_to_s(order_book_data["timestamp"])
-                    # data in this channel is not order book diff but the entire order book (up to depth 150).
+                    # data in this channel is not order book diff but the entire order book (up to depth 100).
                     # so we need to convert it into a order book snapshot.
-                    # Crypto.com does not offer order book diff ws updates.
+                    # TTNEX does not offer order book diff ws updates.
                     orderbook_msg: OrderBookMessage = TtnexOrderBook.snapshot_message_from_exchange(
                         order_book_data,
                         timestamp,
                         metadata={"trading_pair": ttnex_utils.convert_from_exchange_trading_pair(
-                            response["data"]["pair"])}
+                            order_book_data["pair"])}
                     )
                     output.put_nowait(orderbook_msg)
 
@@ -204,9 +200,9 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
                         raise
                     except Exception:
                         self.logger().network(
-                            "Unexpected error with WebSocket connection.",
+                            "Unexpected error with API connection.",
                             exc_info=True,
-                            app_warning_msg="Unexpected error with WebSocket connection. Retrying in 5 seconds. "
+                            app_warning_msg="Unexpected error with API connection. Retrying in 5 seconds. "
                                             "Check network connection."
                         )
                         await asyncio.sleep(5.0)

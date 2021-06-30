@@ -111,10 +111,10 @@ class TtnexOrderBook(OrderBook):
             msg.update(metadata)
 
         msg.update({
-            "exchange_order_id": msg.get("d"),
-            "trade_type": msg.get("s"),
-            "price": msg.get("p"),
-            "amount": msg.get("q"),
+            "exchange_order_id": msg.get("trade_id"),
+            "trade_type": msg.get("side").upper(),
+            "price": msg.get("traded_price"),
+            "amount": msg.get("traded_amount"),
         })
 
         return TtnexOrderBookMessage(

@@ -53,19 +53,19 @@ class TtnexOrderBookMessage(OrderBookMessage):
 
     @property
     def asks(self) -> List[OrderBookRow]:
-        asks = map(self.content["asks"], lambda ask: {"price": ask["price"], "amount": ask["amount"]})
-
-        return [
-            OrderBookRow(float(price), float(amount), self.update_id) for price, amount in asks
+        results = [
+            OrderBookRow(float(ask["price"]), float(ask["amount"]), self.update_id) for ask in self.content["asks"]
         ]
+        sorted(results, key=lambda a: a.price)
+        return results
 
     @property
     def bids(self) -> List[OrderBookRow]:
-        bids = map(self.content["bids"], lambda bid: {"price": bid["price"], "amount": bid["amount"]})
-
-        return [
-            OrderBookRow(float(price), float(amount), self.update_id) for price, amount in bids
+        results = [
+            OrderBookRow(float(bid["price"]), float(bid["amount"]), self.update_id) for bid in self.content["bids"]
         ]
+        sorted(results, key=lambda a: a.price)
+        return results
 
     def __eq__(self, other) -> bool:
         return self.type == other.type and self.timestamp == other.timestamp

@@ -3,7 +3,7 @@
 #################################
 
 # For more detailed information: https://docs.hummingbot.io
-template_version: 21
+template_version: 22
 
 # Exchange configs
 bamboo_relay_use_coordinator: false
@@ -73,6 +73,7 @@ kraken_secret_key: null
 crypto_com_api_key: null
 crypto_com_secret_key: null
 
+ttnex_api_key: null
 
 hitbtc_api_key: null
 hitbtc_secret_key: null

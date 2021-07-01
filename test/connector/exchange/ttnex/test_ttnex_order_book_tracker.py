@@ -9,25 +9,25 @@ import unittest
 from typing import Dict, Optional, List
 from hummingbot.core.event.event_logger import EventLogger
 from hummingbot.core.event.events import OrderBookEvent, OrderBookTradeEvent, TradeType
-from hummingbot.connector.exchange.ttnex.ttnex_order_book_tracker import TTNExOrderBookTracker
-from hummingbot.connector.exchange.ttnex.ttnex_api_order_book_data_source import TTNExAPIOrderBookDataSource
+from hummingbot.connector.exchange.ttnex.ttnex_order_book_tracker import TtnexOrderBookTracker
+from hummingbot.connector.exchange.ttnex.ttnex_api_order_book_data_source import TtnexAPIOrderBookDataSource
 from hummingbot.core.data_type.order_book import OrderBook
 
 
-class TTNExOrderBookTrackerUnitTest(unittest.TestCase):
-    order_book_tracker: Optional[TTNExOrderBookTracker] = None
+class TtnexOrderBookTrackerUnitTest(unittest.TestCase):
+    order_book_tracker: Optional[TtnexOrderBookTracker] = None
     events: List[OrderBookEvent] = [
         OrderBookEvent.TradeEvent
     ]
     trading_pairs: List[str] = [
         "BTC-USDT",
-        "ETH-USDT",
+        "LTC-BTC",
     ]
 
     @classmethod
     def setUpClass(cls):
         cls.ev_loop: asyncio.BaseEventLoop = asyncio.get_event_loop()
-        cls.order_book_tracker: TTNExOrderBookTracker = TTNExOrderBookTracker(cls.trading_pairs)
+        cls.order_book_tracker: TtnexOrderBookTracker = TtnexOrderBookTracker(cls.trading_pairs)
         cls.order_book_tracker.start()
         cls.ev_loop.run_until_complete(cls.wait_til_tracker_ready())
 
@@ -82,19 +82,19 @@ class TTNExOrderBookTrackerUnitTest(unittest.TestCase):
         # Wait 5 seconds to process some diffs.
         self.ev_loop.run_until_complete(asyncio.sleep(10.0))
         order_books: Dict[str, OrderBook] = self.order_book_tracker.order_books
-        eth_usdt: OrderBook = order_books["ETH-USDT"]
-        self.assertIsNot(eth_usdt.last_diff_uid, 0)
-        self.assertGreaterEqual(eth_usdt.get_price_for_volume(True, 10).result_price,
-                                eth_usdt.get_price(True))
-        self.assertLessEqual(eth_usdt.get_price_for_volume(False, 10).result_price,
-                             eth_usdt.get_price(False))
+        ltc_btc: OrderBook = order_books["LTC-BTC"]
+        self.assertIsNot(ltc_btc.last_diff_uid, 0)
+        self.assertGreaterEqual(ltc_btc.get_price_for_volume(True, 10).result_price,
+                                ltc_btc.get_price(True))
+        self.assertLessEqual(ltc_btc.get_price_for_volume(False, 10).result_price,
+                             ltc_btc.get_price(False))
 
     def test_api_get_last_traded_prices(self):
         prices = self.ev_loop.run_until_complete(
-            TTNExAPIOrderBookDataSource.get_last_traded_prices(["BTC-USDT", "LTC-BTC"]))
+            TtnexAPIOrderBookDataSource.get_last_traded_prices(["BTC-USDT", "LTC-BTC"]))
         for key, value in prices.items():
             print(f"{key} last_trade_price: {value}")
-        self.assertGreater(prices["BTC-USDT"], 1000)
+        self.assertGreater(prices["BTC-USDT"], 100)
         self.assertLess(prices["LTC-BTC"], 1)
 
 

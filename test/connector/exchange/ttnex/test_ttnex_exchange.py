@@ -33,7 +33,7 @@ from hummingbot.model.market_state import MarketState
 from hummingbot.model.order import Order
 from hummingbot.model.trade_fill import TradeFill
 from hummingbot.connector.markets_recorder import MarketsRecorder
-from hummingbot.connector.exchange.ttnex.ttnex_exchange import TTNExExchange
+from hummingbot.connector.exchange.ttnex.ttnex_exchange import TtnexExchange
 from . import fixture
 
 logging.basicConfig(level=METRICS_LOG_LEVEL)
@@ -42,7 +42,7 @@ API_SECRET = conf.ttnex_secret_key
 BASE_API_URL = "bot-api.ttnex.io:8000"
 
 
-class TTNExExchangeUnitTest(unittest.TestCase):
+class TtnexExchangeUnitTest(unittest.TestCase):
     events: List[MarketEvent] = [
         MarketEvent.BuyOrderCompleted,
         MarketEvent.SellOrderCompleted,
@@ -53,7 +53,7 @@ class TTNExExchangeUnitTest(unittest.TestCase):
         MarketEvent.OrderCancelled,
         MarketEvent.OrderFailure
     ]
-    connector: TTNExExchange
+    connector: TtnexExchange
     event_logger: EventLogger
     trading_pair = "BTC-USDT"
     base_token, quote_token = trading_pair.split("-")
@@ -66,13 +66,13 @@ class TTNExExchangeUnitTest(unittest.TestCase):
         cls.ev_loop = asyncio.get_event_loop()
 
         cls.clock: Clock = Clock(ClockMode.REALTIME)
-        cls.connector: TTNExExchange = TTNExExchange(
+        cls.connector: TtnexExchange = TtnexExchange(
             ttnex_api_key=API_KEY,
             ttnex_secret_key=API_SECRET,
             trading_pairs=[cls.trading_pair],
             trading_required=True
         )
-        print("Initializing TTNEx market... this will take about a minute.")
+        print("Initializing Ttnex market... this will take about a minute.")
         cls.clock.add_iterator(cls.connector)
         cls.stack: contextlib.ExitStack = contextlib.ExitStack()
         cls._clock = cls.stack.enter_context(cls.clock)
@@ -356,7 +356,7 @@ class TTNExExchangeUnitTest(unittest.TestCase):
             self.clock.remove_iterator(self.connector)
             for event_tag in self.events:
                 self.connector.remove_listener(event_tag, self.event_logger)
-            new_connector = TTNExExchange(API_KEY, API_SECRET, [self.trading_pair], True)
+            new_connector = TtnexExchange(API_KEY, API_SECRET, [self.trading_pair], True)
             for event_tag in self.events:
                 new_connector.add_listener(event_tag, self.event_logger)
             recorder.stop()

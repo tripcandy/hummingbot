@@ -812,7 +812,7 @@ class TtnexExchange(ExchangeBase):
         for order in result["data"]["order_list"]:
             if ttnex_utils.HBOT_BROKER_ID not in order["client_oid"]:
                 continue
-            if order["type"] != "LIMIT":
+            if order["type"] != "limit":
                 raise Exception(f"Unsupported order type {order['type']}")
             ret_val.append(
                 OpenOrder(

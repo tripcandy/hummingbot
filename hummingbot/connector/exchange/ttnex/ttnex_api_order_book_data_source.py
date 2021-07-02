@@ -119,7 +119,7 @@ class TtnexAPIOrderBookDataSource(OrderBookTrackerDataSource):
 
                     for trade in response["data"]:
                         trade: Dict[Any] = trade
-                        trade_timestamp: int = ms_timestamp_to_s(trade["time"])
+                        trade_timestamp: int = ms_timestamp_to_s(int(trade["time"]))
                         trade_msg: OrderBookMessage = TtnexOrderBook.trade_message_from_exchange(
                             trade,
                             trade_timestamp,

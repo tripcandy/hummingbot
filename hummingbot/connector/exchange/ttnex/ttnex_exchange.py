@@ -265,15 +265,23 @@ class TtnexExchange(ExchangeBase):
             “data”: [
                 {
                     “pair”: “LTC-BTC”,
-                    “min_order_size”: 0.010000,
-                    “max_order_size”: 100000.000000,
-                    “min_order_value”: 0.000100
+                    "min_order_price":0.000001,
+                    "max_order_price":100000,
+                    "min_order_size":0.01,
+                    "max_order_size":100000,
+                    "min_order_value":0.0001,
+                    "price_decimal":6,
+                    "volume_decimal":6
                 },
                 {
                     “pair”: “ETH-USDT”,
-                    “min_order_size”: 0.00,
-                    “max_order_size”: 9000.00,
-                    “min_order_value”: 10.00
+                    "min_order_price":0.01,
+                    "max_order_price":1000000,
+                    "min_order_size":0.00001,
+                    "max_order_size":9000,
+                    "min_order_value":10,
+                    "price_decimal":2,
+                    "volume_decimal":5
                 },
                 ...
               ]
@@ -283,15 +291,18 @@ class TtnexExchange(ExchangeBase):
         for rule in pairs_info["data"]:
             try:
                 trading_pair = ttnex_utils.convert_from_exchange_trading_pair(rule["pair"])
-                # price_decimals = Decimal(str(rule["price_decimals"]))
-                # quantity_decimals = Decimal(str(rule["quantity_decimals"]))
-                # # E.g. a price decimal of 2 means 0.01 incremental.
-                # price_step = Decimal("1") / Decimal(str(math.pow(10, price_decimals)))
-                # quantity_step = Decimal("1") / Decimal(str(math.pow(10, quantity_decimals)))
+                price_decimals = Decimal(str(rule["price_decimal"]))
+                quantity_decimals = Decimal(str(rule["volume_decimal"]))
+                # E.g. a price decimal of 2 means 0.01 incremental.
+                price_step = Decimal("1") / Decimal(str(math.pow(10, price_decimals)))
+                quantity_step = Decimal("1") / Decimal(str(math.pow(10, quantity_decimals)))
                 result[trading_pair] = TradingRule(trading_pair,
+                                                   min_price_increment=price_step,
+                                                   min_base_amount_increment=quantity_step,
                                                    min_order_size=Decimal(rule["min_order_size"]),
                                                    max_order_size=Decimal(rule["min_order_size"]),
-                                                   min_order_value=Decimal(rule["min_order_value"]))
+                                                   min_order_value=Decimal(rule["min_order_value"])
+                                                   )
             except Exception:
                 self.logger().error(f"Error parsing the trading pair rule {rule}. Skipping.", exc_info=True)
         return result
@@ -426,8 +437,9 @@ class TtnexExchange(ExchangeBase):
         api_params = {"pair": ttnex_utils.convert_to_exchange_trading_pair(trading_pair),
                       "side": "buy" if trade_type is TradeType.BUY else "sell",
                       "type": "limit",
-                      "price": f"{price:f}",
-                      "size": f"{amount:f}",
+                      "price": float(f"{price:f}"),
+                      "amount": float(f"{amount:f}"),
+                      "client_oid": order_id
                       }
 
         self.start_tracking_order(order_id,

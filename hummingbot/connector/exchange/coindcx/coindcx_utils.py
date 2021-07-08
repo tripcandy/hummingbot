@@ -57,12 +57,16 @@ class RequestId:
         return get_tracking_nonce()
 
 
+# Trading pairs - [ecode, target, base] dictionary object
+trading_pair_dict: Dict[str, List[str, str, str]] = {}
+
+
 def convert_from_exchange_trading_pair(exchange_trading_pair: str) -> str:
-    return exchange_trading_pair.replace("_", "-")
+    return exchange_trading_pair.split("-")[1].replace("_", "-")
 
 
 def convert_to_exchange_trading_pair(hb_trading_pair: str) -> str:
-    return hb_trading_pair.replace("-", "_")
+    return '{}-{}_{}'.format(*trading_pair_dict[hb_trading_pair])
 
 
 def get_new_client_order_id(is_buy: bool, trading_pair: str) -> str:

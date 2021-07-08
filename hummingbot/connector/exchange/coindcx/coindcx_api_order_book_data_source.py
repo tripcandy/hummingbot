@@ -53,16 +53,22 @@ class CoindcxAPIOrderBookDataSource(OrderBookTrackerDataSource):
     @staticmethod
     async def fetch_trading_pairs() -> List[str]:
         async with aiohttp.ClientSession() as client:
-            async with client.get(f"{constants.REST_URL}/public/get-ticker", timeout=10) as response:
+            async with client.get(f"{constants.BASE_URL_API}/exchange/v1/markets_details", timeout=10) as response:
                 if response.status == 200:
                     from hummingbot.connector.exchange.coindcx.coindcx_utils import \
-                        convert_from_exchange_trading_pair
+                        trading_pair_dict
                     try:
-                        data: Dict[str, Any] = await response.json()
-                        return [convert_from_exchange_trading_pair(item["i"]) for item in data["result"]["data"]]
+                        market_data: List[Dict[str, Any]] = await response.json()
+                        trading_pairs = []
+                        for market in market_data:
+                            if market["status"] == "active" and "limit_order" in market["order_types"]:
+                                trading_pair = '{}-{}'.format(market["target_currency_short_name"], market["base_currency_short_name"])
+                                trading_pair_dict[trading_pair] = [market["ecode"], market["target_currency_short_name"], market["base_currency_short_name"]]
+                                trading_pairs.append(trading_pair)
+                        return trading_pairs
                     except Exception:
                         pass
-                        # Do nothing if the request fails -- there will be no autocomplete for kucoin trading pairs
+                        # Do nothing if the request fails -- there will be no autocomplete for trading pairs
                 return []
 
     @staticmethod

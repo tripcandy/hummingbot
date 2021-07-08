@@ -1,51 +1,44 @@
 import hmac
+import json
 import hashlib
 from typing import Dict, Any
 
 
 class CoindcxAuth():
     """
-    Auth class required by crypto.com API
-    Learn more at https://exchange-docs.crypto.com/#digital-signature
+    Auth class required by CoinDCX API
+    Learn more at https://docs.coindcx.com/#authentication
     """
     def __init__(self, api_key: str, secret_key: str):
         self.api_key = api_key
         self.secret_key = secret_key
 
-    def generate_auth_dict(
+    def generate_auth_headers(
         self,
-        path_url: str,
-        request_id: int,
-        nonce: int,
-        data: Dict[str, Any] = None
+        timestamp: int,
+        body: Dict[str, Any] = None
     ):
         """
-        Generates authentication signature and return it in a dictionary along with other inputs
-        :return: a dictionary of request info including the request signature
+        Generates authentication signature and return it in a authentication header dictionary
+        :return: a dictionary of auth headers the request signature
         """
 
-        data = data or {}
-        data['method'] = path_url
-        data.update({'nonce': nonce, 'api_key': self.api_key, 'id': request_id})
+        body = body or {}
+        body.update({'timestamp': timestamp})
 
-        data_params = data.get('params', {})
-        if not data_params:
-            data['params'] = {}
-        params = ''.join(
-            f'{key}{data_params[key]}'
-            for key in sorted(data_params)
-        )
+        json_body = json.dumps(body, separators = (',', ':'))
 
-        payload = f"{path_url}{data['id']}" \
-            f"{self.api_key}{params}{data['nonce']}"
-
-        data['sig'] = hmac.new(
+        signature = hmac.new(
             self.secret_key.encode('utf-8'),
-            payload.encode('utf-8'),
+            json_body.encode(),
             hashlib.sha256
         ).hexdigest()
 
-        return data
+        return {
+            'Content-Type': 'application/json',
+            'X-AUTH-APIKEY': self.api_key,
+            'X-AUTH-SIGNATURE': signature
+        }
 
     def get_headers(self) -> Dict[str, Any]:
         """

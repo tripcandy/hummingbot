@@ -2,5 +2,5 @@
 
 
 EXCHANGE_NAME = "ttnex"
-REST_URL = "http://65.21.73.24:8000/api/v1"
-WS_URL = "ws://65.21.73.24:8080"
+REST_URL = "https://bot-api.ttnex.io:8000/api/v1"
+WS_URL = "wss://websocket-bot.ttnex.io:8080"

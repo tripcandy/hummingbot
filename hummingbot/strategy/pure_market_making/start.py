@@ -77,6 +77,13 @@ def start(self):
         take_if_crossed = c_map.get("take_if_crossed").value
 
         should_wait_order_cancel_confirmation = c_map.get("should_wait_order_cancel_confirmation")
+        size_randomizer = c_map.get("size_randomizer").value
+        size_randomizer_sigma = c_map.get("size_randomizer_sigma").value
+        size_randomizer_symmetric = c_map.get("size_randomizer_symmetric").value
+        price_randomizer = c_map.get("price_randomizer").value
+        price_randomizer_sigma = c_map.get("price_randomizer_sigma").value
+        price_randomizer_symmetric = c_map.get("price_randomizer_symmetric").value
+        order_submission_type_randomizer = c_map.get("order_submission_type_randomizer").value
 
         strategy_logging_options = PureMarketMakingStrategy.OPTION_LOG_ALL
         self.strategy = PureMarketMakingStrategy()
@@ -113,6 +120,13 @@ def start(self):
             hb_app_notification=True,
             order_override={} if order_override is None else order_override,
             should_wait_order_cancel_confirmation=should_wait_order_cancel_confirmation,
+            size_randomizer=size_randomizer,
+            size_randomizer_sigma=size_randomizer_sigma,
+            size_randomizer_symmetric=size_randomizer_symmetric,
+            price_randomizer=price_randomizer,
+            price_randomizer_sigma=price_randomizer_sigma,
+            price_randomizer_symmetric=price_randomizer_symmetric,
+            order_submission_type_randomizer=order_submission_type_randomizer,
         )
     except Exception as e:
         self._notify(str(e))

@@ -130,3 +130,12 @@ should_wait_order_cancel_confirmation: True
 
 # For more detailed information, see:
 # https://docs.hummingbot.io/strategies/pure-market-making/#configuration-parameters
+
+# additional custom parameters
+size_randomizer: False
+size_randomizer_sigma: 0.25
+size_randomizer_symmetric: True
+price_randomizer: False
+price_randomizer_sigma: 0.005
+price_randomizer_symmetric: True
+order_submission_type_randomizer: False

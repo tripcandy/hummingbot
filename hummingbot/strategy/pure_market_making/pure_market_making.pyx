@@ -97,6 +97,13 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                     hb_app_notification: bool = False,
                     order_override: Dict[str, List[str]] = {},
                     should_wait_order_cancel_confirmation = True,
+                    size_randomizer: bool = False,
+                    size_randomizer_sigma: float = 0.25,
+                    size_randomizer_symmetric: bool = True,
+                    price_randomizer: bool = False,
+                    price_randomizer_sigma: float = 0.005,
+                    price_randomizer_symmetric: bool = True,
+                    order_submission_type_randomizer: bool = False,
                     ):
         if price_ceiling != s_decimal_neg_one and price_ceiling < price_floor:
             raise ValueError("Parameter price_ceiling cannot be lower than price_floor.")
@@ -148,6 +155,13 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         self._status_report_interval = status_report_interval
         self._last_own_trade_price = Decimal('nan')
         self._should_wait_order_cancel_confirmation = should_wait_order_cancel_confirmation
+        self._size_randomizer = size_randomizer
+        self._size_randomizer_sigma = size_randomizer_sigma
+        self._size_randomizer_symmetric = size_randomizer_symmetric
+        self._price_randomizer = price_randomizer
+        self._price_randomizer_sigma = price_randomizer_sigma
+        self._price_randomizer_symmetric = price_randomizer_symmetric
+        self._order_submission_type_randomizer = order_submission_type_randomizer
 
         self.c_add_markets([market_info.market])
 
@@ -770,19 +784,39 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                         if size > 0 and price > 0:
                             sells.append(PriceSize(price, size))
         else:
+            if self._size_randomizer and self._size_randomizer_symmetric:
+                size_scale = Decimal(str(self._size_randomizer_sigma * np.random.randn() + 1.0))
+            if self._price_randomizer and self._price_randomizer_symmetric:
+                price_scale = Decimal(str(self._price_randomizer_sigma * np.random.randn() + 1.0))
             if not buy_reference_price.is_nan():
                 for level in range(0, self._buy_levels):
                     price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
+                    if self._price_randomizer and not self._price_randomizer_symmetric:
+                        price_scale = Decimal(str(self._price_randomizer_sigma * np.random.randn() + 1.0))
+                    if self._price_randomizer:
+                        price = price * price_scale
                     price = market.c_quantize_order_price(self.trading_pair, price)
                     size = self._order_amount + (self._order_level_amount * level)
+                    if self._size_randomizer and not self._size_randomizer_symmetric:
+                        size_scale = Decimal(str(self._size_randomizer_sigma * np.random.randn() + 1.0))
+                    if self._size_randomizer:
+                        size = size * size_scale
                     size = market.c_quantize_order_amount(self.trading_pair, size)
                     if size > 0:
                         buys.append(PriceSize(price, size))
             if not sell_reference_price.is_nan():
                 for level in range(0, self._sell_levels):
                     price = sell_reference_price * (Decimal("1") + self._ask_spread + (level * self._order_level_spread))
+                    if self._price_randomizer and not self._price_randomizer_symmetric:
+                        price_scale = Decimal(str(self._price_randomizer_sigma * np.random.randn() + 1.0))
+                    if self._price_randomizer:
+                        price = price * price_scale
                     price = market.c_quantize_order_price(self.trading_pair, price)
                     size = self._order_amount + (self._order_level_amount * level)
+                    if self._size_randomizer and not self._size_randomizer_symmetric:
+                        size_scale = Decimal(str(self._size_randomizer_sigma * np.random.randn() + 1.0))
+                    if self._size_randomizer:
+                        size = size * size_scale
                     size = market.c_quantize_order_amount(self.trading_pair, size)
                     if size > 0:
                         sells.append(PriceSize(price, size))
@@ -1199,51 +1233,103 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         # Number of pair of orders to track for hanging orders
         number_of_pairs = min((len(proposal.buys), len(proposal.sells))) if self._hanging_orders_enabled else 0
 
-        if len(proposal.buys) > 0:
-            if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
-                price_quote_str = [f"{buy.size.normalize()} {self.base_asset}, "
-                                   f"{buy.price.normalize()} {self.quote_asset}"
-                                   for buy in proposal.buys]
-                self.logger().info(
-                    f"({self.trading_pair}) Creating {len(proposal.buys)} bid orders "
-                    f"at (Size, Price): {price_quote_str}"
-                )
-            for idx, buy in enumerate(proposal.buys):
-                bid_order_id = self.c_buy_with_specific_market(
-                    self._market_info,
-                    buy.size,
-                    order_type=self._limit_order_type,
-                    price=buy.price,
-                    expiration_seconds=expiration_seconds
-                )
-                orders_created = True
-                if idx < number_of_pairs:
-                    order = next((o for o in self.active_orders if o.client_order_id == bid_order_id))
-                    if order:
-                        self._hanging_orders_tracker.add_current_pairs_of_proposal_orders_executed_by_strategy(
-                            CreatedPairOfOrders(order, None))
-        if len(proposal.sells) > 0:
-            if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
-                price_quote_str = [f"{sell.size.normalize()} {self.base_asset}, "
-                                   f"{sell.price.normalize()} {self.quote_asset}"
-                                   for sell in proposal.sells]
-                self.logger().info(
-                    f"({self.trading_pair}) Creating {len(proposal.sells)} ask "
-                    f"orders at (Size, Price): {price_quote_str}"
-                )
-            for idx, sell in enumerate(proposal.sells):
-                ask_order_id = self.c_sell_with_specific_market(
-                    self._market_info,
-                    sell.size,
-                    order_type=self._limit_order_type,
-                    price=sell.price,
-                    expiration_seconds=expiration_seconds
-                )
-                orders_created = True
-                if idx < number_of_pairs:
-                    order = next((o for o in self.active_orders if o.client_order_id == ask_order_id))
-                    if order:
-                        self._hanging_orders_tracker.current_created_pairs_of_orders[idx].sell_order = order
+        # first side 0 => buys first
+        first_side = 0
+        if self._order_submission_type_randomizer:
+            first_side = np.random.randint(2)
+
+        if not first_side:
+            if len(proposal.buys) > 0:
+                if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
+                    price_quote_str = [f"{buy.size.normalize()} {self.base_asset}, "
+                                       f"{buy.price.normalize()} {self.quote_asset}"
+                                       for buy in proposal.buys]
+                    self.logger().info(
+                        f"({self.trading_pair}) Creating {len(proposal.buys)} bid orders "
+                        f"at (Size, Price): {price_quote_str}"
+                    )
+                for idx, buy in enumerate(proposal.buys):
+                    bid_order_id = self.c_buy_with_specific_market(
+                        self._market_info,
+                        buy.size,
+                        order_type=self._limit_order_type,
+                        price=buy.price,
+                        expiration_seconds=expiration_seconds
+                    )
+                    orders_created = True
+                    if idx < number_of_pairs:
+                        order = next((o for o in self.active_orders if o.client_order_id == bid_order_id))
+                        if order:
+                            self._hanging_orders_tracker.add_current_pairs_of_proposal_orders_executed_by_strategy(
+                                CreatedPairOfOrders(order, None))
+            if len(proposal.sells) > 0:
+                if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
+                    price_quote_str = [f"{sell.size.normalize()} {self.base_asset}, "
+                                       f"{sell.price.normalize()} {self.quote_asset}"
+                                       for sell in proposal.sells]
+                    self.logger().info(
+                        f"({self.trading_pair}) Creating {len(proposal.sells)} ask "
+                        f"orders at (Size, Price): {price_quote_str}"
+                    )
+                for idx, sell in enumerate(proposal.sells):
+                    ask_order_id = self.c_sell_with_specific_market(
+                        self._market_info,
+                        sell.size,
+                        order_type=self._limit_order_type,
+                        price=sell.price,
+                        expiration_seconds=expiration_seconds
+                    )
+                    orders_created = True
+                    if idx < number_of_pairs:
+                        order = next((o for o in self.active_orders if o.client_order_id == ask_order_id))
+                        if order:
+                            self._hanging_orders_tracker.current_created_pairs_of_orders[idx].sell_order = order
+        else:
+            if len(proposal.sells) > 0:
+                if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
+                    price_quote_str = [f"{sell.size.normalize()} {self.base_asset}, "
+                                       f"{sell.price.normalize()} {self.quote_asset}"
+                                       for sell in proposal.sells]
+                    self.logger().info(
+                        f"({self.trading_pair}) Creating {len(proposal.sells)} ask "
+                        f"orders at (Size, Price): {price_quote_str}"
+                    )
+                for idx, sell in enumerate(proposal.sells):
+                    ask_order_id = self.c_sell_with_specific_market(
+                        self._market_info,
+                        sell.size,
+                        order_type=self._limit_order_type,
+                        price=sell.price,
+                        expiration_seconds=expiration_seconds
+                    )
+                    orders_created = True
+                    if idx < number_of_pairs:
+                        order = next((o for o in self.active_orders if o.client_order_id == ask_order_id))
+                        if order:
+                            self._hanging_orders_tracker.current_created_pairs_of_orders[idx].sell_order = order
+            if len(proposal.buys) > 0:
+                if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
+                    price_quote_str = [f"{buy.size.normalize()} {self.base_asset}, "
+                                       f"{buy.price.normalize()} {self.quote_asset}"
+                                       for buy in proposal.buys]
+                    self.logger().info(
+                        f"({self.trading_pair}) Creating {len(proposal.buys)} bid orders "
+                        f"at (Size, Price): {price_quote_str}"
+                    )
+                for idx, buy in enumerate(proposal.buys):
+                    bid_order_id = self.c_buy_with_specific_market(
+                        self._market_info,
+                        buy.size,
+                        order_type=self._limit_order_type,
+                        price=buy.price,
+                        expiration_seconds=expiration_seconds
+                    )
+                    orders_created = True
+                    if idx < number_of_pairs:
+                        order = next((o for o in self.active_orders if o.client_order_id == bid_order_id))
+                        if order:
+                            self._hanging_orders_tracker.add_current_pairs_of_proposal_orders_executed_by_strategy(
+                                CreatedPairOfOrders(order, None))
         if orders_created:
             self.set_timers()
 

@@ -53,6 +53,13 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         int64_t _logging_options
         object _last_own_trade_price
         bint _should_wait_order_cancel_confirmation
+        bint _size_randomizer
+        double _size_randomizer_sigma
+        bint _size_randomizer_symmetric
+        bint _price_randomizer
+        double _price_randomizer_sigma
+        bint _price_randomizer_symmetric
+        bint _order_submission_type_randomizer
 
     cdef object c_get_mid_price(self)
     cdef object c_create_base_proposal(self)

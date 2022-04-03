@@ -10,14 +10,14 @@ from hummingbot.client.config.config_validators import (
 )
 from hummingbot.client.settings import (
     required_exchanges,
-    EXAMPLE_PAIRS,
+    AllConnectorSettings,
 )
 from typing import Optional
 
 
 def maker_trading_pair_prompt():
     exchange = pure_market_making_config_map.get("exchange").value
-    example = EXAMPLE_PAIRS.get(exchange)
+    example = AllConnectorSettings.get_example_pairs().get(exchange)
     return "Enter the token trading pair you would like to trade on %s%s >>> " \
            % (exchange, f" (e.g. {example})" if example else "")
 
@@ -128,14 +128,14 @@ pure_market_making_config_map = {
                   prompt="How far away from the mid price do you want to place the "
                          "first bid order? (Enter 1 to indicate 1%) >>> ",
                   type_str="decimal",
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
                   prompt_on_new=True),
     "ask_spread":
         ConfigVar(key="ask_spread",
                   prompt="How far away from the mid price do you want to place the "
                          "first ask order? (Enter 1 to indicate 1%) >>> ",
                   type_str="decimal",
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
                   prompt_on_new=True),
     "minimum_spread":
         ConfigVar(key="minimum_spread",
@@ -355,5 +355,47 @@ pure_market_making_config_map = {
                          "(Not waiting requires enough available balance) (Yes/No) >>> ",
                   type_str="bool",
                   default=True,
+                  validator=validate_bool),
+    "size_randomizer":
+        ConfigVar(key="size_randomizer",
+                  prompt="Do you want to randomize the order sizes on all levels? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=False,
+                  validator=validate_bool),
+    "size_randomizer_sigma":
+        ConfigVar(key="size_randomizer_sigma",
+                  prompt="How much variance do you want for the size_randomizer? (Enter any number between 0 and 0.5) >>> ",
+                  type_str="float",
+                  validator=lambda v: validate_decimal(v, min_value=0, max_value=0.5, inclusive=False),
+                  default=0.25),
+    "size_randomizer_symmetric":
+        ConfigVar(key="size_randomizer_symmetric",
+                  prompt="Do you want to randomize the order sizes symmetrically? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=True,
+                  validator=validate_bool),
+    "price_randomizer":
+        ConfigVar(key="price_randomizer",
+                  prompt="Do you want to randomize the order prices on all levels? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=False,
+                  validator=validate_bool),
+    "price_randomizer_sigma":
+        ConfigVar(key="price_randomizer_sigma",
+                  prompt="How much variance do you want for the price_randomizer? (Enter any number between 0 and 0.5) >>> ",
+                  type_str="float",
+                  validator=lambda v: validate_decimal(v, min_value=0, max_value=0.5, inclusive=False),
+                  default=0.005),
+    "price_randomizer_symmetric":
+        ConfigVar(key="price_randomizer_symmetric",
+                  prompt="Do you want to randomize the order prices symmetrically? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=True,
+                  validator=validate_bool),
+    "order_submission_type_randomizer":
+        ConfigVar(key="order_submission_type_randomizer",
+                  prompt="Do you want to randomize the first set of orders' type (buy/sell)? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=False,
                   validator=validate_bool),
 }
